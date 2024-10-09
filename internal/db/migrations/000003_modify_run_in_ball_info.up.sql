@@ -1,0 +1,3 @@
+ALTER TABLE ball_info DROP COLUMN run;
+ALTER TABLE ball_info ADD COLUMN striker_run INT DEFAULT 0;
+ALTER TABLE ball_info ADD COLUMN extra_run INT DEFAULT 0;

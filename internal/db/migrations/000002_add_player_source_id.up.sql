@@ -1,0 +1,1 @@
+ALTER TABLE player ADD source_id VARCHAR(15) UNIQUE;
