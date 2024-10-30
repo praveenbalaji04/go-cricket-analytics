@@ -18,14 +18,14 @@ type App struct {
 }
 
 var pgOnce sync.Once
-var dbInstance *pgxpool.Pool
+var DBInstance *pgxpool.Pool
 
 func InitializeApp() *App {
 	fmt.Println("initiating application")
 	initializeDB()
 	logger := initializeLogger()
 
-	app := App{Logger: *logger, DB: dbInstance}
+	app := App{Logger: *logger, DB: DBInstance}
 	app.Logger.Info("app initiated")
 	return &app
 }
@@ -41,13 +41,13 @@ func initializeDB() {
 		if err != nil {
 			log.Fatal("error in connecting to postgres")
 		}
-		dbInstance = pgDB
-		_ = dbInstance.Ping(context.Background())
+		DBInstance = pgDB
+		_ = DBInstance.Ping(context.Background())
 		//defer dbInstance.Close()
 
 		var greeting string
 
-		err = dbInstance.QueryRow(context.Background(), "select 'Hello world'").Scan(&greeting)
+		err = DBInstance.QueryRow(context.Background(), "select 'Hello world'").Scan(&greeting)
 		if err != nil {
 			log.Fatal("error in querying", err.Error())
 		}
