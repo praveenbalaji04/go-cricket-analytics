@@ -1,0 +1,2 @@
+ALTER TABLE wicket DROP COLUMN event;
+ALTER TABLE wicket DROP COLUMN bowler;
