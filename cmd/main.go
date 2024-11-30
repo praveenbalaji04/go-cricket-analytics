@@ -33,6 +33,7 @@ func healthCheck(c echo.Context) error {
 
 func AddRouter(e *echo.Echo, service *app.App) {
 	v1 := e.Group("/v1/cricket")
+
 	tournamentRouter := v1.Group("/tournament")
 	router.AddTournamentRouters(tournamentRouter, service)
 }

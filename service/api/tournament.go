@@ -14,14 +14,13 @@ type AppInstance struct {
 	App *app.App
 }
 
-func (service AppInstance) ListOfTournaments(c echo.Context) error {
-	var fields string
-	err := internal.QueryTournamentsList(&fields, service.App.DB)
+func (service AppInstance) TournamentStats(c echo.Context) error {
+
+	statsResponse, err := internal.QueryTournamentStats(service.App)
 	if err != nil {
-		service.App.Logger.Info("error in getting list of tournaments", zap.Error(err))
-		var response = map[string]string{"error": "error in getting tournament list"}
-		return c.JSON(http.StatusBadRequest, response)
+		errorResponse := map[string]string{"error": "Error in fetching stats!! Contact Admin"}
+		service.App.Logger.Info("error in fetching stats", zap.Error(err))
+		return c.JSON(http.StatusBadRequest, errorResponse)
 	}
-	var response = map[string]string{"match_types": fields}
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, statsResponse)
 }

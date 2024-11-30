@@ -9,5 +9,5 @@ import (
 
 func AddTournamentRouters(e *echo.Group, service *app.App) {
 	tournament := api.AppInstance{App: service}
-	e.GET("/all", tournament.ListOfTournaments)
+	e.GET("/stats", tournament.TournamentStats)
 }

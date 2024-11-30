@@ -43,11 +43,11 @@ type Event struct {
 	UpdatedAt  time.Time
 }
 
-type Run struct {
-	ByBatsman int
-	Extras    int
-	Total     int
-}
+//type Run struct {
+//	ByBatsman int
+//	Extras    int
+//	Total     int
+//}
 
 type Wicket struct {
 	Player Player
@@ -65,7 +65,8 @@ type BallInfo struct {
 	Batsman     Player
 	Bowler      Player
 	NonStriker  Player
-	Run         Run
+	StrikerRun  int
+	ExtraRun    int
 	Wickets     Wicket
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
