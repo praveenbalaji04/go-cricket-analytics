@@ -18,7 +18,8 @@
 # vendor/
 
 .idea
-t20s_json
+z_cricket_matches_json/*
+t20s_male_json/*
 
 # Go workspace file
 go.work

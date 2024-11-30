@@ -57,6 +57,6 @@ func initializeDB() {
 
 func initializeLogger() *zap.Logger {
 	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	_ = logger.Sync()
 	return logger
 }

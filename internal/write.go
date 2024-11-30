@@ -66,27 +66,34 @@ type ballInfoSql struct {
 }
 
 func ReadData(service *app.App) {
-	files, err := os.ReadDir("t20s_json")
+	directoryName := "t20s_male_json"
+	files, err := os.ReadDir(directoryName)
 	if err != nil {
 		panic("error in reading json directory")
 	}
 
 	skippedItems := 0
+	parsedMatchesBrokenCount := 0
 	for _, e := range files {
-		jsonFilePath := fmt.Sprintf("t20s_json/%s", e.Name())
+		jsonFilePath := fmt.Sprintf("%s/%s", directoryName, e.Name())
 		content, err := os.ReadFile(jsonFilePath)
 		if strings.Contains(jsonFilePath, "README.txt") {
 			// ignore readme file
 			continue
 		}
+		breakParsing := false
 
 		if err != nil {
-			log.Printf("error in fetching data from %s, skipping this file", jsonFilePath)
-			continue
+			service.Logger.Info(
+				"error in fetching data",
+				zap.String("file path", jsonFilePath),
+				zap.Error(err),
+			)
+			//continue
+			panic("err")
 		}
 
 		var jsonData baseStruct
-		//fmt.Println("reading json file path", jsonFilePath)
 		err = json.Unmarshal(content, &jsonData)
 		if err != nil {
 			service.Logger.Info(
@@ -115,6 +122,7 @@ func ReadData(service *app.App) {
 				zap.Int("match_id", jsonData.Info.MatchTypeNumber))
 			panic("error in saving team!!!!")
 		}
+
 		service.Logger.Info(
 			"get or create team",
 			zap.Int("match_id", jsonData.Info.MatchTypeNumber),
@@ -128,9 +136,16 @@ func ReadData(service *app.App) {
 
 			sourceIds := make([]string, 0)
 			for _, player := range players {
+				if strings.Contains(player, "(2)") || strings.Contains(player, "(3)") {
+					breakParsing = true
+					break
+				}
 				sourceId := jsonData.Info.Registry.People[player]
 				playersMapping[sourceId] = player
 				sourceIds = append(sourceIds, sourceId)
+			}
+			if breakParsing {
+				break
 			}
 			teamId := teamInfo[teamName]
 			err := savePlayersBulk(playersMapping, teamId, service.DB)
@@ -149,6 +164,11 @@ func ReadData(service *app.App) {
 				panic("error in getting players from source id")
 			}
 			teamPlayersId[teamId] = playerIds
+		}
+		if breakParsing {
+			// skip the entire match
+			parsedMatchesBrokenCount += 1
+			continue
 		}
 
 		filename := strings.Split(filepath.Base(jsonFilePath), ".json")[0]
@@ -213,6 +233,7 @@ func ReadData(service *app.App) {
 								zap.String("player out", deliveryInfo.Wicket[0].PlayerOut),
 								zap.String("bowler", deliveryInfo.Bowler),
 								zap.Any("other detail", teamPlayers),
+								zap.Int("match id", jsonData.Info.MatchTypeNumber),
 							)
 							panic("error in saving wickets")
 						}
@@ -247,7 +268,7 @@ func ReadData(service *app.App) {
 			)
 		}
 	}
-	fmt.Println("skipped items", skippedItems)
+	fmt.Println("skipped items", skippedItems, "parsedMatchesBrokenCount", parsedMatchesBrokenCount)
 }
 
 func isMatchDataExists(matchId int, service *app.App) bool {
@@ -269,13 +290,10 @@ func addWicket(wicketSqlData wicketSql, service *app.App) (int, error) {
 		"event":  wicketSqlData.event,
 		"kind":   wicketSqlData.kind,
 	}
-	fmt.Println(namedArgs, "named args")
 
 	var id int
 	err := service.DB.QueryRow(context.Background(), sqlQuery, namedArgs).Scan(&id)
 	if err != nil {
-		service.Logger.Info(
-			"error in adding wicket for event", zap.Int("event", wicketSqlData.event), zap.Error(err))
 		return 0, err
 	}
 	return id, nil
@@ -340,7 +358,10 @@ func savePlayersBulk(playersInfo map[string]string, teamId int, dbInstance *pgxp
 	}
 
 	results := dbInstance.SendBatch(context.Background(), &batch)
-	defer results.Close()
+
+	defer func(results pgx.BatchResults) {
+		_ = results.Close()
+	}(results)
 
 	for player := range playersInfo {
 		_, err := results.Exec()
@@ -351,8 +372,6 @@ func savePlayersBulk(playersInfo map[string]string, teamId int, dbInstance *pgxp
 				continue
 			}
 			log.Printf("Unable to save player %v", err)
-		} else {
-			log.Printf("completed saving player %v", player)
 		}
 	}
 	return nil
